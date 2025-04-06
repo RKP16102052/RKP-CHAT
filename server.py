@@ -26,7 +26,8 @@ def get_history():
 @app.route('/message', methods=['POST'])
 def add_message():
     data = request.json
-    history.append(data)
+    message = data.get("text")
+    history.append(message)
     save_history()
     return jsonify({"status": "ok"})
 
