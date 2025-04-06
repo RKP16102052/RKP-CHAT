@@ -6,14 +6,22 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-HISTORY_FILE = "/data/history.json"  # <- сохранение в безопасную директорию Render
+HISTORY_FILE = "/data/history.json"
+
+# Убедимся, что папка /data существует (для локального запуска)
+os.makedirs("/data", exist_ok=True)
 
 # Загружаем историю
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r") as f:
-        history = json.load(f)
-else:
-    history = []
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+history = load_history()
 
 def save_history():
     with open(HISTORY_FILE, "w") as f:
@@ -25,11 +33,13 @@ def get_history():
 
 @app.route('/message', methods=['POST'])
 def add_message():
-    data = request.json
-    message = data.get("text")
-    history.append(message)
-    save_history()
-    return jsonify({"status": "ok"})
+    data = request.get_json()
+    message = data.get("text")  # теперь клиент должен отправлять { "text": "..." }
+    if message:
+        history.append(message)
+        save_history()
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "No message received"}), 400
 
 @app.route('/clear', methods=['POST'])
 def clear_history():
